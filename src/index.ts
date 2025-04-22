@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import { createServer } from 'http';
@@ -25,7 +25,7 @@ app.use(express.json());
 app.use('/api/progress', progressRoutes);
 
 // Basic health check route
-app.get('/api/health', (req, res) => {
+app.get('/api/health', (req: Request, res: Response) => {
     res.json({
         status: 'ok',
         mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
