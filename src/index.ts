@@ -12,10 +12,16 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
+const allowedOrigins = ['https://video-track-fe.vercel.app', 'http://localhost:3000'];
+
 app.use(cors({
-    origin: process.env.NODE_ENV === 'production'
-        ? process.env.CLIENT_URL
-        : 'http://localhost:3000',
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
 }));
@@ -38,9 +44,7 @@ const httpServer = createServer(app);
 // Socket.io setup
 const io = new Server(httpServer, {
     cors: {
-        origin: process.env.NODE_ENV === 'production'
-            ? process.env.CLIENT_URL
-            : 'http://localhost:3000',
+        origin: allowedOrigins,
         methods: ['GET', 'POST'],
         credentials: true
     },

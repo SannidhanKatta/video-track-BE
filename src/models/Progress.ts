@@ -13,6 +13,7 @@ export interface IProgress extends Document {
     totalWatched: number;
     videoDuration: number;
     lastWatchedAt: Date;
+    isCompleted: boolean;
     mergeIntervals: () => number;
     addInterval: (start: number, end: number, currentTime: number) => boolean;
     isIntervalWatched: (start: number, end: number) => boolean;
@@ -27,8 +28,9 @@ const ProgressSchema: Schema = new Schema({
     }],
     lastPosition: { type: Number, default: 0 },
     totalWatched: { type: Number, default: 0 },
-    videoDuration: { type: Number, default: 0 },
+    videoDuration: { type: Number, required: true },
     lastWatchedAt: { type: Date, default: Date.now },
+    isCompleted: { type: Boolean, default: false }
 }, {
     timestamps: true
 });
@@ -55,8 +57,8 @@ ProgressSchema.methods.mergeIntervals = function () {
         const current = sorted[i];
         const last = merged[merged.length - 1];
 
-        // Check for overlapping or consecutive intervals (within 2 seconds)
-        if (current.start <= last.end + 2) {
+        // Check for overlapping or consecutive intervals (within 1 second)
+        if (current.start <= last.end + 1) {
             // Merge overlapping or consecutive intervals
             last.end = Math.max(last.end, current.end);
         } else {
@@ -70,13 +72,16 @@ ProgressSchema.methods.mergeIntervals = function () {
     this.totalWatched = merged.reduce((sum: number, interval: IInterval) =>
         sum + (interval.end - interval.start), 0);
 
+    // Check if video is completed (95% watched)
+    this.isCompleted = (this.totalWatched / this.videoDuration) >= 0.95;
+
     return this.totalWatched;
 };
 
 // Method to add a new interval
 ProgressSchema.methods.addInterval = function (start: number, end: number, currentTime: number): boolean {
     // Basic validation
-    if (end <= start) return false;
+    if (end <= start || start < 0 || end > this.videoDuration) return false;
 
     // Prevent large skips (more than 10 seconds)
     const lastPos = this.lastPosition;
